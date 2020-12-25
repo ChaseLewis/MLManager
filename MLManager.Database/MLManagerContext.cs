@@ -30,6 +30,7 @@ namespace MLManager.Database
         public DbSet<User> Users { get; set; }
         public DbSet<Dataset> Datasets { get; set; }
         public DbSet<DatasetSchema> DatasetSchemas { get; set; }
+        public DbSet<DataItem> DataItems { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -58,6 +59,9 @@ namespace MLManager.Database
             datasetSchemaEntity.Property(u => u.CreationTimestamp).HasDefaultValueSql("now() at time zone 'utc'");
             datasetSchemaEntity.HasOne<User>().WithMany().HasForeignKey(u => u.UserId);
             datasetSchemaEntity.HasOne<Dataset>().WithMany().HasForeignKey(u => u.DatasetId);
+
+            //DataItems FluentAPI
+            var dataItemsEntity = modelBuilder.Entity<DataItem>();
         }
     }
 }

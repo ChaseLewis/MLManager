@@ -8,8 +8,9 @@ namespace MLManager.Database
     [Table("data_item")]
     public class DataItem
     {
+        public long DataItemId { get; set; }
         public long DatasetId { get; set; }
-        public int UserId { get; set; }
+        public long UserId { get; set; }
 
         [Column(TypeName = "jsonb")]
         public string LabelJson { get; set; }

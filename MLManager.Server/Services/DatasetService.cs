@@ -29,9 +29,22 @@ namespace MLManager.Services
             return dataset;
         }
 
+        public async Task<DatasetSchema> GetCurrentSchema(int userId, int datasetId)
+        {
+            return await _ctx.DatasetSchemas
+            .Where(x => x.UserId == userId && x.DatasetId == datasetId)
+            .OrderByDescending(x => x.VersionId)
+            .Take(1)
+            .FirstOrDefaultAsync();
+        }
+
         public async Task<IEnumerable<Dataset>> GetDatasets(int userId,int offset = 0,int size = 25)
         {
-            return await _ctx.Datasets.Where(x => x.UserId == userId).Skip(offset).Take(size).ToListAsync();
+            return await _ctx.Datasets
+            .Where(x => x.UserId == userId)
+            .Skip(offset)
+            .Take(size)
+            .ToListAsync();
         }
         
     }
