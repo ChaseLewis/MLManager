@@ -1,3 +1,4 @@
+using Dapper;
 using System.Linq;
 using MLManager.Database;
 using System.Threading.Tasks;
@@ -16,36 +17,59 @@ namespace MLManager.Services
 
         public async Task<Dataset> CreateDataset(int userId,string datasetName)
         {
-            var dataset = new Dataset
+            return await _ctx.Database.GetDbConnection().QueryFirstOrDefaultAsync<Dataset>(@"
+                INSERT INTO public.datasets
+                (""UserId"",""DatasetName"")
+                VALUES
+                (@UserId,@DatasetName)
+                RETURNING *;
+            ",new
             {
                 UserId = userId,
                 DatasetName = datasetName
-            };
-
-            var datasetEntity = _ctx.Datasets.Add(dataset);
-            await _ctx.SaveChangesAsync();
-            datasetEntity.State = EntityState.Detached;
-
-            return dataset;
+            });
         }
 
         public async Task<DatasetSchema> GetCurrentSchema(int userId, int datasetId)
         {
-            return await _ctx.DatasetSchemas
-            .Where(x => x.UserId == userId && x.DatasetId == datasetId)
-            .OrderByDescending(x => x.VersionId)
-            .Take(1)
-            .FirstOrDefaultAsync();
+            return await _ctx.Database.GetDbConnection().QueryFirstOrDefaultAsync<DatasetSchema>(@"
+                SELECT * FROM public.dataset_schemas
+                WHERE ""UserId"" = @UserId && ""DatasetId"" = @DatasetId ORDER BY ""VersionId"" DESCENDING LIMIT 1;
+            ",new
+            {
+                UserId = userId,
+                DatasetId = datasetId
+            });
         }
 
-        public async Task<IEnumerable<Dataset>> GetDatasets(int userId,int offset = 0,int size = 25)
+        public async Task<DatasetSchema> CreateNewSchema(int userId,int datasetId,string schemaJson)
         {
-            return await _ctx.Datasets
-            .Where(x => x.UserId == userId)
-            .Skip(offset)
-            .Take(size)
-            .ToListAsync();
+            return await _ctx.Database.GetDbConnection().QueryFirstOrDefaultAsync<DatasetSchema>(@"
+                DECLARE currentVersionId INT;
+                SELECT currentVersionId = COALESCE(MAX(VersionId),0) FROM public.dataset_schemas
+                WHERE UserId = @UserId && DatasetId = @DatasetId ORDER BY VersionId DESCENDING;
+
+                INSERT INTO public.dataset_schemas 
+                (UserId,DatasetId,Schema)
+                VALUES
+                (@UserId,@DatasetId,@Schema)
+                RETURNING *;
+            ",new
+            {
+                UserId = userId,
+                DatasetId = datasetId,
+                Schema = schemaJson
+            });
+
         }
-        
+
+        // public async Task<IEnumerable<Dataset>> GetDatasets(int accountId, int userId,int offset = 0,int size = 25)
+        // {
+        //     return await _ctx.Datasets
+        //     .Where(x => x.UserId == userId)
+        //     .Skip(offset)
+        //     .Take(size)
+        //     .ToListAsync();
+        // }
     }
 }
