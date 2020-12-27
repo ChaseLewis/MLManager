@@ -10,6 +10,7 @@ using MLManager.Database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using MLManager.Services;
 
 namespace MLManager
 {
@@ -60,6 +61,11 @@ namespace MLManager
             services.AddDbContext<MLManagerContext>(opt =>{
                 opt.UseNpgsql(Configuration.GetConnectionString("MLManager"));
             });
+            services.AddTransient<IJwtService,JwtService>();
+            services.AddTransient<IAuthenticationService,AuthenticationService>();
+            services.AddTransient<IPasswordService,PasswordService>();
+            services.AddTransient<IPermissionService,PermissionService>();
+            services.AddTransient<IDatasetService,DatasetService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

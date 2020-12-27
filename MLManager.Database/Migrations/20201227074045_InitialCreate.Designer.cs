@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MLManager.Database.Migrations
 {
     [DbContext(typeof(MLManagerContext))]
-    [Migration("20201227071651_InitialCreate")]
+    [Migration("20201227074045_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -166,9 +166,12 @@ namespace MLManager.Database.Migrations
             modelBuilder.Entity("MLManager.Database.JwtSecurity", b =>
                 {
                     b.Property<Guid>("DeviceId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("device_id");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
 
                     b.Property<DateTime>("CreateTimestamp")
                         .ValueGeneratedOnAdd()
@@ -186,11 +189,7 @@ namespace MLManager.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("refresh_token");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("DeviceId");
+                    b.HasKey("DeviceId", "UserId");
 
                     b.ToTable("jwt_securities");
                 });

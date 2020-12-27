@@ -18,7 +18,7 @@ namespace MLManager.Database
             var jwtEntity = modelBuilder.Entity<JwtSecurity>();
             
             //Primary Key
-            jwtEntity.HasKey(x => x.DeviceId);
+            jwtEntity.HasKey(x => new { x.DeviceId, x.UserId });
 
             //Column Definitions
             jwtEntity.Property(x => x.DeviceId)

@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Security.Principal;
 using System.Security.Claims;
 
-namespace MLManager.Database
+namespace MLManager.Controllers
 {
     public static class IPrincipalExtensions
     {

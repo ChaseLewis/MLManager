@@ -3,7 +3,6 @@ using Dapper;
 using System.Linq;
 using MLManager.Database;
 using System.Threading.Tasks;
-using System.Security.Principal;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
@@ -37,7 +36,7 @@ namespace MLManager.Services
         {
             var reader = await _ctx.Database.GetDbConnection().QueryMultipleAsync(@"
                 UPDATE public.jwt_securities
-                SET last_updated_timestamp = timezone('utc',now()), refresh_token = 
+                SET last_updated_timestamp = timezone('utc',now()), refresh_token = uuid_generate_v4()
                 WHERE device_id = @deviceId AND user_id = @user_id AND refresh_token = @refreshToken
                 RETURNING *;
 
@@ -85,6 +84,10 @@ namespace MLManager.Services
             }
 
             var jwtResult = _jwtService.CreateJwt(user);
+            if(deviceId == null || deviceId == Guid.Empty)
+            {
+                deviceId = Guid.NewGuid();
+            }
 
             var security = await _ctx.Database.GetDbConnection().QueryFirstAsync<JwtSecurity>(@"
                 INSERT INTO public.jwt_securities
@@ -97,7 +100,8 @@ namespace MLManager.Services
                 RETURNING *;
             ",new
             {
-
+                deviceId,
+                userId = user.UserId
             });
 
             return new JwtResponse

@@ -164,9 +164,12 @@ namespace MLManager.Database.Migrations
             modelBuilder.Entity("MLManager.Database.JwtSecurity", b =>
                 {
                     b.Property<Guid>("DeviceId")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
                         .HasColumnName("device_id");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
 
                     b.Property<DateTime>("CreateTimestamp")
                         .ValueGeneratedOnAdd()
@@ -184,11 +187,7 @@ namespace MLManager.Database.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("refresh_token");
 
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer")
-                        .HasColumnName("user_id");
-
-                    b.HasKey("DeviceId");
+                    b.HasKey("DeviceId", "UserId");
 
                     b.ToTable("jwt_securities");
                 });

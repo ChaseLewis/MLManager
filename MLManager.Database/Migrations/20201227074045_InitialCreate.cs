@@ -37,7 +37,7 @@ namespace MLManager.Database.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_jwt_securities", x => x.device_id);
+                    table.PrimaryKey("PK_jwt_securities", x => new { x.device_id, x.user_id });
                 });
 
             migrationBuilder.CreateTable(
