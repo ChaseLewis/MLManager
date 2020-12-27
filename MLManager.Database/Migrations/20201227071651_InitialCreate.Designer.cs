@@ -10,7 +10,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace MLManager.Database.Migrations
 {
     [DbContext(typeof(MLManagerContext))]
-    [Migration("20201226074012_InitialCreate")]
+    [Migration("20201227071651_InitialCreate")]
     partial class InitialCreate
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -48,10 +48,6 @@ namespace MLManager.Database.Migrations
 
             modelBuilder.Entity("MLManager.Database.DataItem", b =>
                 {
-                    b.Property<Guid>("DatasetId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("dataset_id");
-
                     b.Property<Guid>("DataItemId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid")
@@ -64,8 +60,11 @@ namespace MLManager.Database.Migrations
                         .HasColumnName("creation_timestamp")
                         .HasDefaultValueSql("now() at time zone 'utc'");
 
+                    b.Property<Guid>("DatasetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dataset_id");
+
                     b.Property<string>("LabelJson")
-                        .IsRequired()
                         .HasColumnType("jsonb")
                         .HasColumnName("label_json");
 
@@ -73,9 +72,9 @@ namespace MLManager.Database.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("version_id");
 
-                    b.HasKey("DatasetId", "DataItemId");
+                    b.HasKey("DataItemId");
 
-                    b.HasIndex("DataItemId");
+                    b.HasIndex("DatasetId", "VersionId");
 
                     b.ToTable("data_items");
                 });
@@ -111,6 +110,33 @@ namespace MLManager.Database.Migrations
                     b.ToTable("datasets");
                 });
 
+            modelBuilder.Entity("MLManager.Database.DatasetPermission", b =>
+                {
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.Property<Guid>("DatasetId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("dataset_id");
+
+                    b.Property<DateTime>("CreateTimestamp")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("create_timestamp")
+                        .HasDefaultValueSql("now() at time zone 'utc'");
+
+                    b.Property<int>("PermissionLevel")
+                        .HasColumnType("integer")
+                        .HasColumnName("permission_level");
+
+                    b.HasKey("UserId", "DatasetId");
+
+                    b.HasIndex("DatasetId");
+
+                    b.ToTable("dataset_permissions");
+                });
+
             modelBuilder.Entity("MLManager.Database.DatasetSchema", b =>
                 {
                     b.Property<Guid>("DatasetId")
@@ -135,6 +161,38 @@ namespace MLManager.Database.Migrations
                     b.HasKey("DatasetId", "VersionId");
 
                     b.ToTable("dataset_schemas");
+                });
+
+            modelBuilder.Entity("MLManager.Database.JwtSecurity", b =>
+                {
+                    b.Property<Guid>("DeviceId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid")
+                        .HasColumnName("device_id");
+
+                    b.Property<DateTime>("CreateTimestamp")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("create_timestamp")
+                        .HasDefaultValueSql("now() at time zone 'utc'");
+
+                    b.Property<DateTime>("LastUpdatedTimestamp")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp without time zone")
+                        .HasColumnName("last_updated_timestamp")
+                        .HasDefaultValueSql("now() at time zone 'utc'");
+
+                    b.Property<Guid>("RefreshToken")
+                        .HasColumnType("uuid")
+                        .HasColumnName("refresh_token");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("DeviceId");
+
+                    b.ToTable("jwt_securities");
                 });
 
             modelBuilder.Entity("MLManager.Database.Permission", b =>
@@ -196,13 +254,13 @@ namespace MLManager.Database.Migrations
                         },
                         new
                         {
-                            PermissionTypeId = 3,
+                            PermissionTypeId = 2,
                             Name = "Datasets"
                         },
                         new
                         {
-                            PermissionTypeId = 2,
-                            Name = "DataItems"
+                            PermissionTypeId = 3,
+                            Name = "DatasetSchemas"
                         });
                 });
 
@@ -280,6 +338,21 @@ namespace MLManager.Database.Migrations
                     b.HasOne("MLManager.Database.Account", null)
                         .WithMany()
                         .HasForeignKey("AccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("MLManager.Database.DatasetPermission", b =>
+                {
+                    b.HasOne("MLManager.Database.Dataset", null)
+                        .WithMany()
+                        .HasForeignKey("DatasetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("MLManager.Database.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

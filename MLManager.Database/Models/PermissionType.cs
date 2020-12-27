@@ -7,8 +7,8 @@ namespace MLManager.Database
     public enum PermissionType
     {
         Users = 1,
-        DataItems = 2,
-        Datasets = 3
+        Datasets = 2,
+        DatasetSchema = 3
     }
 
     [Table("permission_type")]
@@ -41,7 +41,7 @@ namespace MLManager.Database
             {
                 new PermissionTypeEntity { PermissionTypeId = PermissionType.Users, Name = "Users" },
                 new PermissionTypeEntity { PermissionTypeId = PermissionType.Datasets, Name = "Datasets" },
-                new PermissionTypeEntity { PermissionTypeId = PermissionType.DataItems, Name = "DataItems" }
+                new PermissionTypeEntity { PermissionTypeId = PermissionType.DatasetSchema, Name = "DatasetSchemas" }
             });
         }
     }

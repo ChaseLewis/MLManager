@@ -1,3 +1,4 @@
+using System;
 using Dapper;
 using System.Linq;
 using MLManager.Database;
@@ -10,66 +11,98 @@ namespace MLManager.Services
     public class DatasetService : IDatasetService
     {
         private readonly MLManagerContext _ctx;
-        public DatasetService(MLManagerContext ctx)
+        private readonly IPermissionService _permissionService;
+        public DatasetService(MLManagerContext ctx,IPermissionService permissionService)
         {
             _ctx = ctx;
+            _permissionService = permissionService;
         }
 
-        public async Task<Dataset> CreateDataset(int userId,string datasetName)
+        public async Task<Dataset> CreateDataset(int userId, int accountId,string datasetName)
         {
+            //Should check if the user has permissions to create the dataset for the account
+            if(!await _permissionService.HasPermission(userId,accountId,PermissionType.Datasets,PermissionLevel.CREATE))
+            {
+                throw new PermissionException(userId,PermissionType.Datasets,PermissionLevel.CREATE,
+                $"User does not have permission to create a dataset for the selected account.");
+            }
+
             return await _ctx.Database.GetDbConnection().QueryFirstOrDefaultAsync<Dataset>(@"
                 INSERT INTO public.datasets
-                (""UserId"",""DatasetName"")
+                (account_id,database_name)
                 VALUES
-                (@UserId,@DatasetName)
+                (@accountId,@datasetName)
                 RETURNING *;
             ",new
             {
-                UserId = userId,
-                DatasetName = datasetName
+                accountId,
+                datasetName
             });
         }
 
-        public async Task<DatasetSchema> GetCurrentSchema(int userId, int datasetId)
+        public async Task<DatasetSchema> CreateNewSchema(int userId,Guid datasetId,string schema)
+        {
+            if(!await _permissionService.HasDatasetSchemaAccess(userId,datasetId,PermissionLevel.CREATE))
+            {
+                throw new PermissionException(userId,PermissionType.DatasetSchema,PermissionLevel.CREATE,
+                $"User does not have permission to create a new schema for the selected dataset.");
+            }
+
+            return await _ctx.Database.GetDbConnection().QueryFirstOrDefaultAsync<DatasetSchema>($@"
+                DECLARE currentVersionId INT;
+                SELECT currentVersionId = COALESCE(MAX(VersionId),0) FROM public.dataset_schemas
+                WHERE dataset_id = @datasetId ORDER BY version_id DESCENDING;
+
+                INSERT INTO public.dataset_schemas
+                (dataset_id,version_id,schema)
+                VALUES
+                (@datasetId,currentVersionId+1,@schema)
+                RETURNING *
+            ",new
+            {
+                datasetId,
+                schema
+            });
+        }
+
+        public async Task<DatasetSchema> GetCurrentSchema(Guid datasetId)
         {
             return await _ctx.Database.GetDbConnection().QueryFirstOrDefaultAsync<DatasetSchema>(@"
                 SELECT * FROM public.dataset_schemas
-                WHERE ""UserId"" = @UserId && ""DatasetId"" = @DatasetId ORDER BY ""VersionId"" DESCENDING LIMIT 1;
+                WHERE dataset_id = @datasetId ORDER BY version_id DESCENDING LIMIT 1;
             ",new
             {
-                UserId = userId,
-                DatasetId = datasetId
+                datasetId
             });
         }
 
-        public async Task<DatasetSchema> CreateNewSchema(int userId,int datasetId,string schemaJson)
+        public async Task<DatasetSchema> GetCurrentSchema(int userId, Guid datasetId)
         {
-            return await _ctx.Database.GetDbConnection().QueryFirstOrDefaultAsync<DatasetSchema>(@"
-                DECLARE currentVersionId INT;
-                SELECT currentVersionId = COALESCE(MAX(VersionId),0) FROM public.dataset_schemas
-                WHERE UserId = @UserId && DatasetId = @DatasetId ORDER BY VersionId DESCENDING;
-
-                INSERT INTO public.dataset_schemas 
-                (UserId,DatasetId,Schema)
-                VALUES
-                (@UserId,@DatasetId,@Schema)
-                RETURNING *;
-            ",new
+            //Should check if the user has permissions to create the dataset for the account
+            if(!await _permissionService.HasDatasetSchemaAccess(userId,datasetId,PermissionLevel.READ))
             {
-                UserId = userId,
-                DatasetId = datasetId,
-                Schema = schemaJson
-            });
+                throw new InvalidOperationException($"User {userId} does not have permission to access schemas for dataset {datasetId}");
+            }
 
+            return await GetCurrentSchema(datasetId);
         }
 
-        // public async Task<IEnumerable<Dataset>> GetDatasets(int accountId, int userId,int offset = 0,int size = 25)
-        // {
-        //     return await _ctx.Datasets
-        //     .Where(x => x.UserId == userId)
-        //     .Skip(offset)
-        //     .Take(size)
-        //     .ToListAsync();
-        // }
+        public async Task<DatasetSchema> GetSchema(int userId,Guid datasetId,int versionId)
+        {
+            //Should check if the user has permissions to create the dataset for the account
+            if(!await _permissionService.HasDatasetSchemaAccess(userId,datasetId,PermissionLevel.READ))
+            {
+                throw new InvalidOperationException($"User {userId} does not have permission to access schemas for dataset {datasetId}");
+            }
+
+            return await _ctx.Database.GetDbConnection().QueryFirstOrDefaultAsync<DatasetSchema>(@"
+                SELECT * FROM public.dataset_schemas
+                WHERE account_id = @accountId AND dataset_id = @datasetId AND version_id = @versionId;
+            ",new
+            {
+                datasetId,
+                versionId
+            });  
+        }
     }
 }

@@ -36,6 +36,6 @@ namespace MLManager.Services
         Task<bool> DoesUsernameExist(string username);
         Task<bool> DoesEmailExist(string email);
         Task<User> CreateUser(CreateUserRequest user);
-        Task<User> Authenticate(string username,string password);
+        Task<JwtResponse> Authenticate(string username,string password,Guid? deviceId);
     }
 }

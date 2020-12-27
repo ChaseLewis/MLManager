@@ -31,6 +31,7 @@ namespace MLManager.Database
         public DbSet<Dataset> Datasets { get; set; }
         public DbSet<DatasetSchema> DatasetSchemas { get; set; }
         public DbSet<DataItem> DataItems { get; set; }
+        public DbSet<JwtSecurity> JwtSecurities { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -47,6 +48,8 @@ namespace MLManager.Database
             DataItem.BuildModel(modelBuilder);
             PermissionTypeEntity.BuildModel(modelBuilder);
             Permission.BuildModel(modelBuilder);
+            DatasetPermission.BuildModel(modelBuilder);
+            JwtSecurity.BuildModel(modelBuilder);
         }
     }
 }

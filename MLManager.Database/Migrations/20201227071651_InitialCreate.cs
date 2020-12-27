@@ -26,6 +26,21 @@ namespace MLManager.Database.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "jwt_securities",
+                columns: table => new
+                {
+                    device_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    user_id = table.Column<int>(type: "integer", nullable: false),
+                    refresh_token = table.Column<Guid>(type: "uuid", nullable: false),
+                    create_timestamp = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now() at time zone 'utc'"),
+                    last_updated_timestamp = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now() at time zone 'utc'")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_jwt_securities", x => x.device_id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "permission_type",
                 columns: table => new
                 {
@@ -114,20 +129,46 @@ namespace MLManager.Database.Migrations
                 name: "data_items",
                 columns: table => new
                 {
-                    dataset_id = table.Column<Guid>(type: "uuid", nullable: false),
                     data_item_id = table.Column<Guid>(type: "uuid", nullable: false, defaultValueSql: "uuid_generate_v4()"),
+                    dataset_id = table.Column<Guid>(type: "uuid", nullable: false),
                     version_id = table.Column<int>(type: "integer", nullable: false),
-                    label_json = table.Column<string>(type: "jsonb", nullable: false),
+                    label_json = table.Column<string>(type: "jsonb", nullable: true),
                     creation_timestamp = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now() at time zone 'utc'")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_data_items", x => new { x.dataset_id, x.data_item_id });
+                    table.PrimaryKey("PK_data_items", x => x.data_item_id);
                     table.ForeignKey(
                         name: "FK_data_items_datasets_dataset_id",
                         column: x => x.dataset_id,
                         principalTable: "datasets",
                         principalColumn: "dataset_id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "dataset_permissions",
+                columns: table => new
+                {
+                    user_id = table.Column<int>(type: "integer", nullable: false),
+                    dataset_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    permission_level = table.Column<int>(type: "integer", nullable: false),
+                    create_timestamp = table.Column<DateTime>(type: "timestamp without time zone", nullable: false, defaultValueSql: "now() at time zone 'utc'")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_dataset_permissions", x => new { x.user_id, x.dataset_id });
+                    table.ForeignKey(
+                        name: "FK_dataset_permissions_datasets_dataset_id",
+                        column: x => x.dataset_id,
+                        principalTable: "datasets",
+                        principalColumn: "dataset_id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_dataset_permissions_users_user_id",
+                        column: x => x.user_id,
+                        principalTable: "users",
+                        principalColumn: "user_id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -157,14 +198,19 @@ namespace MLManager.Database.Migrations
                 values: new object[,]
                 {
                     { 1, "Users" },
-                    { 3, "Datasets" },
-                    { 2, "DataItems" }
+                    { 2, "Datasets" },
+                    { 3, "DatasetSchemas" }
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_data_items_data_item_id",
+                name: "IX_data_items_dataset_id_version_id",
                 table: "data_items",
-                column: "data_item_id");
+                columns: new[] { "dataset_id", "version_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_dataset_permissions_dataset_id",
+                table: "dataset_permissions",
+                column: "dataset_id");
 
             migrationBuilder.CreateIndex(
                 name: "IX_datasets_account_id_dataset_name",
@@ -207,7 +253,13 @@ namespace MLManager.Database.Migrations
                 name: "data_items");
 
             migrationBuilder.DropTable(
+                name: "dataset_permissions");
+
+            migrationBuilder.DropTable(
                 name: "dataset_schemas");
+
+            migrationBuilder.DropTable(
+                name: "jwt_securities");
 
             migrationBuilder.DropTable(
                 name: "permissions");

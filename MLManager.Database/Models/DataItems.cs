@@ -7,10 +7,9 @@ namespace MLManager.Database
     [Table("data_items")]
     public class DataItem
     {
-        public Guid DatasetId { get; set; }
         public Guid DataItemId { get; set; }
+        public Guid DatasetId { get; set; }
         public int VersionId { get; set; }
-        //Might need the accountId for sharding purposes ...
         public string LabelJson { get; set; }
         public DateTime CreationTimestamp { get; set; }
 
@@ -19,10 +18,10 @@ namespace MLManager.Database
             var dataItemEntity = modelBuilder.Entity<DataItem>();
 
             //Primary Key
-            dataItemEntity.HasKey(x => new { x.DatasetId, x.DataItemId });
+            dataItemEntity.HasKey(x => x.DataItemId);
 
             //Non-Clustered Indexes
-            dataItemEntity.HasIndex(x => new { x.DataItemId });
+            dataItemEntity.HasIndex(x => new { x.DatasetId, x.VersionId });
 
             //Foreign Key
             dataItemEntity.HasOne<Dataset>().WithMany().HasForeignKey(x => x.DatasetId);
@@ -42,7 +41,6 @@ namespace MLManager.Database
             .HasColumnName(nameof(DataItem.VersionId).ToSnakeCase());
 
             dataItemEntity.Property(x => x.LabelJson)
-            .IsRequired()
             .HasColumnType("jsonb")
             .HasColumnName(nameof(DataItem.LabelJson).ToSnakeCase());
 

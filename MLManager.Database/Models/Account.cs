@@ -2,7 +2,6 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
-
 namespace MLManager.Database
 {
     [Table("accounts")]
@@ -15,7 +14,7 @@ namespace MLManager.Database
         public static void BuildModel(ModelBuilder modelBuilder)
         {
             var accountEntity = modelBuilder.Entity<Account>();
-
+            
             accountEntity.HasKey(x => x.AccountId);
 
             accountEntity.Property(x => x.AccountId)
