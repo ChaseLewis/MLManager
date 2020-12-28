@@ -32,8 +32,11 @@ namespace MLManager.Services
             return _ctx.DisposeAsync();
         }   
 
-        public async Task<JwtResponse> Refresh(int userId, Guid refreshToken, Guid? deviceId)
+        public async Task<JwtResponse> Refresh(int userId, Guid refreshToken, Guid deviceId)
         {
+            if(userId <= 0 || refreshToken == Guid.Empty || deviceId == Guid.Empty)
+                return null;
+                
             var reader = await _ctx.Database.GetDbConnection().QueryMultipleAsync(@"
                 UPDATE public.jwt_securities
                 SET last_updated_timestamp = timezone('utc',now()), refresh_token = uuid_generate_v4()
@@ -63,11 +66,12 @@ namespace MLManager.Services
             {
                 Token = jwtResult.AccessToken,
                 RefreshToken = security.RefreshToken,
-                Expiration = jwtResult.ExpirationTimestamp
+                Expiration = jwtResult.ExpirationTimestamp,
+                DeviceId = security.DeviceId
             };
         }
 
-        public async Task<JwtResponse> Authenticate(string username,string password,Guid? deviceId) //This should take a deviceId also ...
+        public async Task<JwtResponse> Authenticate(string username,string password,Guid deviceId) //This should take a deviceId also ...
         {
             User user = await _ctx.Users.Where(x => x.Username == username).AsNoTracking().FirstOrDefaultAsync();
 
@@ -108,7 +112,8 @@ namespace MLManager.Services
             {
                 Token = jwtResult.AccessToken,
                 RefreshToken = security.RefreshToken,
-                Expiration = jwtResult.ExpirationTimestamp
+                Expiration = jwtResult.ExpirationTimestamp,
+                DeviceId = security.DeviceId
             };
         }
 
@@ -119,6 +124,7 @@ namespace MLManager.Services
 
         public async Task<bool> DoesEmailExist(string email)
         {
+            email = email.ToLower();
             return await _ctx.Users.AnyAsync(x => x.Email == email);
         }
 
@@ -133,7 +139,7 @@ namespace MLManager.Services
                 LastName = userRequest.LastName,
                 Username = userRequest.Username,
                 PasswordHash = _passwordService.HashPassword(userRequest.Password),
-                Email = userRequest.Email,
+                Email = userRequest.Email.ToLower(),
                 PhoneNumber = userRequest.PhoneNumber
             };
 

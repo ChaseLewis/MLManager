@@ -18,7 +18,7 @@ namespace MLManager.Services
 
         public JwtService(IConfiguration config)
         {
-            var jwtConfig = config.GetValue<JwtTokenConfig>("jwtTokenConfig");
+            var jwtConfig = config.GetSection("jwtTokenConfig").Get<JwtTokenConfig>();
             
             _issuer = jwtConfig.Issuer;
             _audience = jwtConfig.Audience;

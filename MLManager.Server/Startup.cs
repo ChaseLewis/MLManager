@@ -1,5 +1,6 @@
 using System;
 using System.Text;
+using MLManager.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -7,10 +8,11 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.OpenApi.Models;
 using MLManager.Database;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using MLManager.Services;
+using Microsoft.AspNetCore.Mvc.Authorization;
 
 namespace MLManager
 {
@@ -36,7 +38,8 @@ namespace MLManager
             .AddJwtBearer(x => 
             {
                 x.RequireHttpsMetadata = true;
-                x.SaveToken = true;
+                x.SaveToken = false;
+
                 x.TokenValidationParameters = new TokenValidationParameters
                 {
                     ValidateIssuer = true,
@@ -50,17 +53,52 @@ namespace MLManager
                 };
             });
 
+            services.AddMvc(x =>
+            {
+                var policy = new AuthorizationPolicyBuilder()
+                    .RequireAuthenticatedUser()
+                    .Build();
+
+                x.Filters.Add(new AuthorizeFilter(policy));
+            });
+
             services.AddMemoryCache();
             services.AddControllers();
+            services.AddAuthorization();
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "MLManager", Version = "v1" });
+                                    
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+                {
+                    Description = "JWT Authorization header using the Bearer scheme (Example: 'Bearer 12345abcdef')",
+                    Name = "Authorization",
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "Bearer"
+                });
+
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = "Bearer"
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
             });
 
             services.AddEntityFrameworkNpgsql();
             services.AddDbContext<MLManagerContext>(opt =>{
                 opt.UseNpgsql(Configuration.GetConnectionString("MLManager"));
             });
+
             services.AddTransient<IJwtService,JwtService>();
             services.AddTransient<IAuthenticationService,AuthenticationService>();
             services.AddTransient<IPasswordService,PasswordService>();
@@ -75,7 +113,10 @@ namespace MLManager
             {
                 app.UseDeveloperExceptionPage();
                 app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "MLManager v1"));
+                app.UseSwaggerUI(c =>
+                {
+                    c.SwaggerEndpoint("/swagger/v1/swagger.json", "MLManager v1");
+                });
             }
 
             app.UseHttpsRedirection();
